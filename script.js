@@ -19,7 +19,10 @@ const ICONS = {
   Education: "https://img.icons8.com/fluency/48/000000/graduation-cap.png",
   Career: "https://img.icons8.com/fluency/48/000000/briefcase.png",
   Milestone: "https://img.icons8.com/fluency/48/000000/flag.png",
-  "Life Driver": "https://img.icons8.com/fluency/48/000000/fire-element.png"
+  "Life Driver": "https://img.icons8.com/fluency/48/000000/fire-element.png",
+
+  // ⭐ NEW: fallback icon so Vis.js never receives null/undefined
+  Default: "https://img.icons8.com/fluency/48/000000/circle.png"
 };
 
 let ICONS_ENABLED = false;
@@ -58,7 +61,9 @@ function convert(rows) {
       raw: a,
       title: `<strong>${a.name}</strong><br>${a.type}`,
       shape: ICONS_ENABLED ? "image" : "dot",
-      image: ICONS_ENABLED ? ICONS[a.type] : null
+
+      // ⭐ SAFE ICON HANDLING
+      image: ICONS_ENABLED ? (ICONS[a.type] || ICONS["Default"]) : null
     };
 
     nodes[b.id] = {
@@ -68,7 +73,9 @@ function convert(rows) {
       raw: b,
       title: `<strong>${b.name}</strong><br>${b.type}`,
       shape: ICONS_ENABLED ? "image" : "dot",
-      image: ICONS_ENABLED ? ICONS[b.type] : null
+
+      // ⭐ SAFE ICON HANDLING
+      image: ICONS_ENABLED ? (ICONS[b.type] || ICONS["Default"]) : null
     };
 
     edges.push({
@@ -244,11 +251,15 @@ async function renderInitial() {
 
   document.getElementById("toggle-icons").onclick = () => {
     ICONS_ENABLED = !ICONS_ENABLED;
+
     const updated = data.nodes.get().map(n => ({
       id: n.id,
       shape: ICONS_ENABLED ? "image" : "dot",
-      image: ICONS_ENABLED ? ICONS[n.raw.type] : null
+
+      // ⭐ SAFE ICON HANDLING HERE TOO
+      image: ICONS_ENABLED ? (ICONS[n.raw.type] || ICONS["Default"]) : null
     }));
+
     data.nodes.update(updated);
   };
 
