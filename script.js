@@ -12,20 +12,6 @@ const COLORS = {
   "Life Driver": "#f79646"
 };
 
-const ICONS = {
-  Origin: "https://img.icons8.com/emoji/48/000000/star-emoji.png",
-  Domain: "https://img.icons8.com/fluency/48/000000/compass.png",
-  Activity: "https://img.icons8.com/fluency/48/000000/rocket.png",
-  Education: "https://img.icons8.com/fluency/48/000000/graduation-cap.png",
-  Career: "https://img.icons8.com/fluency/48/000000/briefcase.png",
-  Milestone: "https://img.icons8.com/fluency/48/000000/flag.png",
-  "Life Driver": "https://img.icons8.com/fluency/48/000000/fire-element.png",
-
-  // ⭐ NEW: fallback icon so Vis.js never receives null/undefined
-  Default: "https://img.icons8.com/fluency/48/000000/circle.png"
-};
-
-let ICONS_ENABLED = false;
 let ANIMATIONS_ENABLED = true;
 
 /* -------------------------------------------------------
@@ -60,10 +46,7 @@ function convert(rows) {
       color: COLORS[a.type] || "#999",
       raw: a,
       title: `<strong>${a.name}</strong><br>${a.type}`,
-      shape: ICONS_ENABLED ? "image" : "dot",
-
-      // ⭐ SAFE ICON HANDLING
-      image: ICONS_ENABLED ? (ICONS[a.type] || ICONS["Default"]) : null
+      shape: "dot"   // ⭐ ALWAYS DOT
     };
 
     nodes[b.id] = {
@@ -72,10 +55,7 @@ function convert(rows) {
       color: COLORS[b.type] || "#999",
       raw: b,
       title: `<strong>${b.name}</strong><br>${b.type}`,
-      shape: ICONS_ENABLED ? "image" : "dot",
-
-      // ⭐ SAFE ICON HANDLING
-      image: ICONS_ENABLED ? (ICONS[b.type] || ICONS["Default"]) : null
+      shape: "dot"   // ⭐ ALWAYS DOT
     };
 
     edges.push({
@@ -106,20 +86,6 @@ function updateSidebar(node) {
     <hr/>
     <div>${node.raw.description || "No description available."}</div>
   `;
-}
-
-/* -------------------------------------------------------
-   LEGEND
-------------------------------------------------------- */
-
-function renderLegend() {
-  const legend = document.getElementById("legend");
-  legend.innerHTML = Object.keys(ICONS).map(type => `
-    <div id="legend-item">
-      <img src="${ICONS[type]}"/>
-      ${type}
-    </div>
-  `).join("");
 }
 
 /* -------------------------------------------------------
@@ -249,25 +215,6 @@ async function renderInitial() {
      TOGGLE BUTTONS
   ------------------------- */
 
-  document.getElementById("toggle-icons").onclick = () => {
-    ICONS_ENABLED = !ICONS_ENABLED;
-
-    const updated = data.nodes.get().map(n => ({
-      id: n.id,
-      shape: ICONS_ENABLED ? "image" : "dot",
-
-      // SAFE ICON HANDLING HERE TOO
-      image: ICONS_ENABLED ? (ICONS[n.raw.type] || ICONS["Default"]) : null
-    }));
-
-    data.nodes.update(updated);
-  };
-
-  document.getElementById("toggle-legend").onclick = () => {
-    const legend = document.getElementById("legend");
-    legend.style.display = legend.style.display === "none" ? "block" : "none";
-  };
-
   document.getElementById("toggle-radial").onclick = () => {
     applyRadialLayout(data);
     if (ANIMATIONS_ENABLED) network.stabilize(200);
@@ -280,8 +227,6 @@ async function renderInitial() {
   document.getElementById("toggle-anim").onclick = () => {
     ANIMATIONS_ENABLED = !ANIMATIONS_ENABLED;
   };
-
-  renderLegend();
 }
 
 renderInitial();
