@@ -1,32 +1,62 @@
 // -------------------------------
 // CONFIGURATION
 // -------------------------------
-const DATA_API_URL = "YOUR_DATA_API_URL"; 
-const API_KEY = "YOUR_DATA_API_KEY";
+
+// These are not used anymore (Data API disabled), but keeping them for clarity
+const DATA_API_URL = "UNUSED";
+const API_KEY = "UNUSED";
 
 // Node colors mapped to the "type" field in your CSVs
 const COLORS = {
-  Origin: "#ffcc00",       // Discovery Phase
-  Domain: "#4f81bd",       // STEM, Humanities, etc.
-  Activity: "#9bbb59",     // Coding, Dance, etc.
-  Education: "#c0504d",    // University Degrees
-  Career: "#8064a2",       // Professional Roles
-  Milestone: "#f79646"     // Life Events
+  Origin: "#ffcc00",
+  Domain: "#4f81bd",
+  Activity: "#9bbb59",
+  Education: "#c0504d",
+  Career: "#8064a2",
+  Milestone: "#f79646"
 };
 
 // -------------------------------
-// DATA API HELPER
+// DEBUG PANEL
 // -------------------------------
-async function runCypher(cypher, params = {}) {
-  const response = await fetch("/.netlify/functions/query", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ cypher, params })
-  });
-
-  return await response.json();
+function debugLog(...args) {
+  console.log(...args);
+  const box = document.getElementById("debug");
+  if (!box) return;
+  box.textContent += args.map(a => JSON.stringify(a, null, 2)).join(" ") + "\n";
 }
 
+// -------------------------------
+// DATA API HELPER (via Netlify)
+// -------------------------------
+async function runCypher(cypher, params = {}) {
+  debugLog("RUN CYPHER:", cypher, params);
+
+  let response;
+  try {
+    response = await fetch("/.netlify/functions/query", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ cypher, params })
+    });
+  } catch (err) {
+    debugLog("NETWORK ERROR calling Netlify function:", err);
+    return null;
+  }
+
+  debugLog("FUNCTION RESPONSE STATUS:", response.status);
+
+  let json;
+  try {
+    json = await response.json();
+  } catch (err) {
+    debugLog("JSON PARSE ERROR:", err);
+    return null;
+  }
+
+  debugLog("FUNCTION RESPONSE JSON:", json);
+  return json;
+}
 
 // -------------------------------
 // GRAPH INITIALIZATION
@@ -36,7 +66,6 @@ let graphData = { nodes: [], links: [] };
 
 const Graph = ForceGraph()(graphElem)
   .nodeId("id")
-  // Accessing 'name' and 'type' from the properties of your CSV nodes
   .nodeLabel(node => `<strong>${node.name}</strong><br/><em>${node.type}</em><br/>${node.description || ''}`)
   .nodeColor(node => COLORS[node.type] || "#999")
   .linkDirectionalArrowLength(4)
@@ -50,14 +79,26 @@ const Graph = ForceGraph()(graphElem)
 loadInitial();
 
 async function loadInitial() {
-  // Matches the Origin and the first layer of life drivers/major domains
   const cypher = `
-    MATCH (o {type: 'Origin'})-[r:EXPLORES|INFLUENCES]->(m)
+    MATCH (o {id: 'O1'})-[r:EXPLORES|INFLUENCES]->(m)
     RETURN o, r, m
   `;
 
   const rows = await runCypher(cypher);
+
+  if (!rows) {
+    debugLog("ERROR: No rows returned from initial query.");
+    return;
+  }
+
+  if (!Array.isArray(rows)) {
+    debugLog("ERROR: rows is not an array:", rows);
+    return;
+  }
+
   graphData = convertToGraph(rows);
+  debugLog("INITIAL GRAPH DATA:", graphData);
+
   Graph.graphData(graphData);
 }
 
@@ -67,15 +108,25 @@ async function loadInitial() {
 async function handleNodeClick(node) {
   updateSidebar(node);
 
-  // This query finds all nodes connected to the clicked node.
-  // It handles the specific relationship types used in your files (PREPARES, LEADS_TO, etc.)
   const cypher = `
     MATCH (n {id: $id})-[r]->(m)
     RETURN n, r, m
   `;
 
   const rows = await runCypher(cypher, { id: node.id });
+
+  if (!rows) {
+    debugLog("ERROR: No rows returned for click expansion.");
+    return;
+  }
+
+  if (!Array.isArray(rows)) {
+    debugLog("ERROR: rows is not an array:", rows);
+    return;
+  }
+
   const newData = convertToGraph(rows);
+  debugLog("EXPANDED GRAPH DATA:", newData);
 
   mergeGraphData(newData);
   Graph.graphData(graphData);
@@ -85,23 +136,34 @@ async function handleNodeClick(node) {
 // GRAPH HELPERS
 // -------------------------------
 function convertToGraph(rows) {
+  debugLog("CONVERT TO GRAPH — INPUT ROWS:", rows);
+
   const nodes = [];
   const links = [];
 
-  rows.forEach(row => {
-    // Neo4j REST API returns objects in row[0], row[1], row[2]
-    const n = row.row[0]; // Start Node
-    const r = row.row[1]; // Relationship
-    const m = row.row[2]; // End Node
+  rows.forEach((row, index) => {
+    if (!row || !row.row) {
+      debugLog(`WARNING: Row ${index} missing .row property:`, row);
+      return;
+    }
 
-    if (n && !nodes.find(x => x.id === n.id)) nodes.push(n);
-    if (m && !nodes.find(x => x.id === m.id)) nodes.push(m);
+    const n = row.row[0];
+    const r = row.row[1];
+    const m = row.row[2];
+
+    if (!n || !m) {
+      debugLog(`WARNING: Row ${index} missing node data:`, row);
+      return;
+    }
+
+    if (!nodes.find(x => x.id === n.id)) nodes.push(n);
+    if (!nodes.find(x => x.id === m.id)) nodes.push(m);
 
     if (r) {
       links.push({
         source: n.id,
         target: m.id,
-        relationship: r.relationship || r.type // Uses your CSV relationship field
+        relationship: r.relationship || r.type || "UNKNOWN"
       });
     }
   });
@@ -128,8 +190,7 @@ function mergeGraphData(newData) {
 // -------------------------------
 function updateSidebar(node) {
   const box = document.getElementById("node-details-content");
-  
-  // Directly maps to the columns in your CSV files
+
   box.innerHTML = `
     <div class="detail-item"><strong>Name:</strong> ${node.name}</div>
     <div class="detail-item"><strong>ID:</strong> ${node.id}</div>
