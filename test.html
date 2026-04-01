@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>ForceGraph Minimal Test</title>
+  <title>ForceGraph Local Test</title>
   <style>
     html, body {
       margin: 0;
@@ -20,12 +20,14 @@
 <body>
   <div id="graph"></div>
 
-  <script type="module">
-    import ForceGraph from "https://unpkg.com/force-graph@1.51.2/dist/force-graph.esm.js";
-    window.ForceGraph = ForceGraph;
+  <!-- Load YOUR local UMD build -->
+  <script src="lib/force-graph.min.js"></script>
 
+  <script>
     console.log("ForceGraph loaded:", typeof ForceGraph);
+    console.log("ForceGraph keys:", Object.keys(ForceGraph));
 
+    // Minimal test data
     const data = {
       nodes: [
         { id: "A", name: "Node A" },
@@ -37,10 +39,17 @@
     };
 
     const elem = document.getElementById("graph");
+
+    // UMD build requires node-object links, so convert:
+    const nodeMap = {};
+    data.nodes.forEach(n => nodeMap[n.id] = n);
+    data.links = data.links.map(l => ({
+      source: nodeMap[l.source],
+      target: nodeMap[l.target]
+    }));
+
     const Graph = ForceGraph()(elem)
       .nodeId("id")
-      .linkSource("source")
-      .linkTarget("target")
       .nodeLabel(n => n.name)
       .nodeColor(() => "#4f81bd");
 
