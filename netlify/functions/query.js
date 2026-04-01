@@ -17,12 +17,20 @@ export async function handler(event, context) {
     const session = driver.session();
     const result = await session.run(cypher, params || {});
 
+    const rows = result.records.map(record => ({
+      row: [
+        record.get(0),   // first return value
+        record.get(1),   // second return value
+        record.get(2)    // third return value
+      ]
+    }));
+
     await session.close();
     await driver.close();
 
     return {
       statusCode: 200,
-      body: JSON.stringify(result.records.map(r => r.toObject()))
+      body: JSON.stringify(rows)
     };
 
   } catch (err) {
