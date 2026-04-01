@@ -1,40 +1,37 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="utf-8">
   <title>Pathways Explorer</title>
-  <link rel="stylesheet" href="style.css" />
+
+  <!-- Vis.js Network -->
+  <script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+
+  <!-- Styles -->
+  <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
   <div id="app">
     <div id="sidebar">
-      <h1>Pathways Explorer</h1>
-      <p>
-        Start from the Discovery Phase and explore how domains, activities,
-        education, and careers connect.
-      </p>
-
       <h2>Node Details</h2>
-      <div id="node-details">
-        <div id="node-details-content">
-          <p>Click a node to see more information here.</p>
-        </div>
-      </div>
+      <div id="node-details">Click a node to explore</div>
     </div>
 
-    <div id="graph-container">
-      <div id="graph"></div>
+    <div id="graph">
+      <div id="legend"></div>
+
+      <div id="toolbar">
+        <button class="tool-btn" id="toggle-icons">Toggle Icons</button>
+        <button class="tool-btn" id="toggle-legend">Toggle Legend</button>
+        <button class="tool-btn" id="toggle-radial">Radial Layout</button>
+        <button class="tool-btn" id="guided-mode">Guided Mode</button>
+        <button class="tool-btn" id="toggle-anim">Toggle Animations</button>
+      </div>
     </div>
   </div>
 
-  <div id="debug"></div>
-
-<script type="module">
-  import ForceGraph from "https://esm.sh/force-graph@1.51.2";
-  window.ForceGraph = ForceGraph;
-</script>
-
-<script src="script.js"></script>
-
+  <!-- Script -->
+  <script src="script.js"></script>
 </body>
 </html>
