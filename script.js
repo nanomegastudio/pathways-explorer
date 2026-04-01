@@ -68,8 +68,9 @@ window.addEventListener("load", () => {
   debugLog("ForceGraph loaded?", typeof ForceGraph);
 
   Graph = ForceGraph()(graphElem)
-    .nodeId("id") // still OK
-    // IMPORTANT: DO NOT USE linkSource/linkTarget for UMD build
+    .nodeId("id")
+    .linkSource("source")   // ESM build supports this
+    .linkTarget("target")   // ESM build supports this
     .nodeLabel(node => `<strong>${node.name}</strong><br/><em>${node.type}</em>`)
     .nodeColor(node => COLORS[node.type] || "#999")
     .linkDirectionalArrowLength(4)
@@ -186,10 +187,9 @@ function convertToGraph(rows) {
     if (!nodes.find(x => x.id === startNode.id)) nodes.push(startNode);
     if (!nodes.find(x => x.id === endNode.id)) nodes.push(endNode);
 
-    // IMPORTANT: UMD build requires node-object links
     links.push({
-      source: startNode,   // ← node object, not string
-      target: endNode,     // ← node object, not string
+      source: startNode.id,   // string IDs again
+      target: endNode.id,
       relationship: r.properties?.relationship || r.type
     });
   });
@@ -205,7 +205,7 @@ function mergeGraphData(newData) {
   });
 
   newData.links.forEach(l => {
-    if (!graphData.links.find(x => x.source.id === l.source.id && x.target.id === l.target.id)) {
+    if (!graphData.links.find(x => x.source === l.source && x.target === l.target)) {
       graphData.links.push(l);
     }
   });

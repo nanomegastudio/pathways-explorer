@@ -29,7 +29,12 @@
 
   <div id="debug"></div>
 
-  <script src="lib/force-graph.min.js"></script>
-  <script src="script.js"></script>
+<script type="module">
+  import ForceGraph from "https://esm.sh/force-graph@1.51.2";
+  window.ForceGraph = ForceGraph;
+</script>
+
+<script src="script.js"></script>
+
 </body>
 </html>
