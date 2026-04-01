@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>ForceGraph Minimal Test</title>
+  <style>
+    html, body {
+      margin: 0;
+      height: 100%;
+      overflow: hidden;
+      background: #111;
+    }
+    #graph {
+      width: 100%;
+      height: 100%;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="graph"></div>
+
+  <!-- Load ForceGraph ESM -->
+  <script type="module">
+    import ForceGraph from "https://esm.sh/force-graph@1.51.2?bundle";
+
+    // Expose globally so we can debug
+    window.ForceGraph = ForceGraph;
+
+    console.log("ForceGraph loaded:", typeof ForceGraph);
+    console.log("ForceGraph keys:", Object.keys(ForceGraph));
+
+    // Minimal test data
+    const data = {
+      nodes: [
+        { id: "A", name: "Node A" },
+        { id: "B", name: "Node B" }
+      ],
+      links: [
+        { source: "A", target: "B" }
+      ]
+    };
+
+    // Create graph
+    const elem = document.getElementById("graph");
+    const Graph = ForceGraph()(elem)
+      .nodeId("id")
+      .linkSource("source")
+      .linkTarget("target")
+      .nodeLabel(n => n.name)
+      .nodeColor(() => "#4f81bd");
+
+    Graph.graphData(data);
+    Graph.zoomToFit(400, 50);
+  </script>
+</body>
+</html>
