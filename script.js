@@ -156,20 +156,39 @@ function convertToGraph(rows) {
       return;
     }
 
-    if (!nodes.find(x => x.id === n.id)) nodes.push(n);
-    if (!nodes.find(x => x.id === m.id)) nodes.push(m);
+    // Flatten node properties
+    const startNode = {
+      id: n.properties.id,
+      name: n.properties.name,
+      type: n.properties.type,
+      domain: n.properties.domain,
+      stage: n.properties.stage,
+      description: n.properties.description
+    };
 
-    if (r) {
-      links.push({
-        source: n.id,
-        target: m.id,
-        relationship: r.relationship || r.type || "UNKNOWN"
-      });
-    }
+    const endNode = {
+      id: m.properties.id,
+      name: m.properties.name,
+      type: m.properties.type,
+      domain: m.properties.domain,
+      stage: m.properties.stage,
+      description: m.properties.description
+    };
+
+    if (!nodes.find(x => x.id === startNode.id)) nodes.push(startNode);
+    if (!nodes.find(x => x.id === endNode.id)) nodes.push(endNode);
+
+    // Relationship
+    links.push({
+      source: startNode.id,
+      target: endNode.id,
+      relationship: r.properties?.relationship || r.type
+    });
   });
 
   return { nodes, links };
 }
+
 
 function mergeGraphData(newData) {
   newData.nodes.forEach(n => {
