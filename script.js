@@ -69,6 +69,8 @@ window.addEventListener("load", () => {
 
   Graph = ForceGraph()(graphElem)
     .nodeId("id")
+    .linkSource("source")   // ← CRITICAL FIX
+    .linkTarget("target")   // ← CRITICAL FIX
     .nodeLabel(node => `<strong>${node.name}</strong><br/><em>${node.type}</em>`)
     .nodeColor(node => COLORS[node.type] || "#999")
     .linkDirectionalArrowLength(4)
