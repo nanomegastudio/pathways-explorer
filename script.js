@@ -2,18 +2,14 @@
 // CONFIGURATION
 // -------------------------------
 
-// These are not used anymore (Data API disabled), but keeping them for clarity
-const DATA_API_URL = "UNUSED";
-const API_KEY = "UNUSED";
-
-// Node colors mapped to the "type" field in your CSVs
 const COLORS = {
   Origin: "#ffcc00",
   Domain: "#4f81bd",
   Activity: "#9bbb59",
   Education: "#c0504d",
   Career: "#8064a2",
-  Milestone: "#f79646"
+  Milestone: "#f79646",
+  "Life Driver": "#f79646"
 };
 
 // -------------------------------
@@ -27,7 +23,7 @@ function debugLog(...args) {
 }
 
 // -------------------------------
-// DATA API HELPER (via Netlify)
+// RUN CYPHER THROUGH NETLIFY
 // -------------------------------
 async function runCypher(cypher, params = {}) {
   debugLog("RUN CYPHER:", cypher, params);
@@ -59,25 +55,31 @@ async function runCypher(cypher, params = {}) {
 }
 
 // -------------------------------
-// GRAPH INITIALIZATION
+// FORCEGRAPH INITIALIZATION (Fix 3)
 // -------------------------------
-const graphElem = document.getElementById("graph");
+let Graph;
 let graphData = { nodes: [], links: [] };
 
-const Graph = ForceGraph()(graphElem)
-  .nodeId("id")
-  .nodeLabel(node => `<strong>${node.name}</strong><br/><em>${node.type}</em><br/>${node.description || ''}`)
-  .nodeColor(node => COLORS[node.type] || "#999")
-  .linkDirectionalArrowLength(4)
-  .linkDirectionalArrowRelPos(1)
-  .linkLabel(link => link.relationship)
-  .onNodeClick(handleNodeClick);
+window.addEventListener("load", () => {
+  debugLog("WINDOW LOADED — initializing graph");
+
+  const graphElem = document.getElementById("graph");
+
+  Graph = ForceGraph()(graphElem)
+    .nodeId("id")
+    .nodeLabel(node => `<strong>${node.name}</strong><br/><em>${node.type}</em>`)
+    .nodeColor(node => COLORS[node.type] || "#999")
+    .linkDirectionalArrowLength(4)
+    .linkDirectionalArrowRelPos(1)
+    .linkLabel(link => link.relationship)
+    .onNodeClick(handleNodeClick);
+
+  loadInitial();
+});
 
 // -------------------------------
 // LOAD INITIAL GRAPH
 // -------------------------------
-loadInitial();
-
 async function loadInitial() {
   const cypher = `
     MATCH (o {id: 'O1'})-[r:EXPLORES|INFLUENCES]->(m)
@@ -86,12 +88,7 @@ async function loadInitial() {
 
   const rows = await runCypher(cypher);
 
-  if (!rows) {
-    debugLog("ERROR: No rows returned from initial query.");
-    return;
-  }
-
-  if (!Array.isArray(rows)) {
+  if (!rows || !Array.isArray(rows)) {
     debugLog("ERROR: rows is not an array:", rows);
     return;
   }
@@ -100,6 +97,14 @@ async function loadInitial() {
   debugLog("INITIAL GRAPH DATA:", graphData);
 
   Graph.graphData(graphData);
+
+  // -------------------------------
+  // FIX 6 — Force a resize after rendering
+  // -------------------------------
+  setTimeout(() => {
+    debugLog("Dispatching resize event to ForceGraph");
+    window.dispatchEvent(new Event("resize"));
+  }, 500);
 }
 
 // -------------------------------
@@ -115,12 +120,7 @@ async function handleNodeClick(node) {
 
   const rows = await runCypher(cypher, { id: node.id });
 
-  if (!rows) {
-    debugLog("ERROR: No rows returned for click expansion.");
-    return;
-  }
-
-  if (!Array.isArray(rows)) {
+  if (!rows || !Array.isArray(rows)) {
     debugLog("ERROR: rows is not an array:", rows);
     return;
   }
@@ -130,6 +130,11 @@ async function handleNodeClick(node) {
 
   mergeGraphData(newData);
   Graph.graphData(graphData);
+
+  // Fix 6 again for expanded graph
+  setTimeout(() => {
+    window.dispatchEvent(new Event("resize"));
+  }, 300);
 }
 
 // -------------------------------
@@ -156,7 +161,6 @@ function convertToGraph(rows) {
       return;
     }
 
-    // Flatten node properties
     const startNode = {
       id: n.properties.id,
       name: n.properties.name,
@@ -178,7 +182,6 @@ function convertToGraph(rows) {
     if (!nodes.find(x => x.id === startNode.id)) nodes.push(startNode);
     if (!nodes.find(x => x.id === endNode.id)) nodes.push(endNode);
 
-    // Relationship
     links.push({
       source: startNode.id,
       target: endNode.id,
@@ -188,7 +191,6 @@ function convertToGraph(rows) {
 
   return { nodes, links };
 }
-
 
 function mergeGraphData(newData) {
   newData.nodes.forEach(n => {
