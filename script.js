@@ -88,33 +88,28 @@ window.addEventListener("load", () => {
 // LOAD INITIAL GRAPH
 // -------------------------------
 async function loadInitial() {
-  const cypher = `
-    MATCH (o {id: 'O1'})-[r:EXPLORES|INFLUENCES]->(m)
-    RETURN o, r, m
-  `;
+  debugLog("RUNNING SIMPLE TEST GRAPH");
 
-  const rows = await runCypher(cypher);
+  const testData = {
+    nodes: [
+      { id: "A", name: "Node A", type: "Test" },
+      { id: "B", name: "Node B", type: "Test" }
+    ],
+    links: [
+      { source: "A", target: "B", relationship: "TEST_LINK" }
+    ]
+  };
 
-  if (!rows || !Array.isArray(rows)) {
-    debugLog("ERROR: rows is not an array:", rows);
-    return;
-  }
+  debugLog("TEST GRAPH DATA:", testData);
 
-  graphData = convertToGraph(rows);
-  debugLog("INITIAL GRAPH DATA:", graphData);
+  Graph.graphData(testData);
 
-  const graphElem = document.getElementById("graph");
-  debugLog("GRAPH ELEMENT SIZE BEFORE RENDER:", graphElem.offsetWidth, graphElem.offsetHeight);
-
-  Graph.graphData(graphData);
+  // Try to force it into view
   Graph.zoomToFit(400, 50);
 
-  setTimeout(() => {
-    debugLog("GRAPH ELEMENT SIZE BEFORE RESIZE:", graphElem.offsetWidth, graphElem.offsetHeight);
-    window.dispatchEvent(new Event("resize"));
-    debugLog("GRAPH ELEMENT SIZE AFTER RESIZE:", graphElem.offsetWidth, graphElem.offsetHeight);
-  }, 500);
+  debugLog("TEST GRAPH RENDERED");
 }
+
 
 // -------------------------------
 // CLICK TO EXPAND
