@@ -1,8 +1,12 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8" />
-  <title>ForceGraph Local Test</title>
+  <meta charset="utf-8">
+  <title>Neovis.js Explorer</title>
+
+  <!-- Neovis.js CDN -->
+  <script src="https://unpkg.com/neovis.js@2.0.2/dist/neovis.js"></script>
+
   <style>
     html, body {
       margin: 0;
@@ -10,7 +14,7 @@
       overflow: hidden;
       background: #111;
     }
-    #graph {
+    #viz {
       width: 100%;
       height: 100%;
     }
@@ -18,43 +22,123 @@
 </head>
 
 <body>
-  <div id="graph"></div>
-
-  <!-- Load YOUR local UMD build -->
-  <script src="lib/force-graph.min.js"></script>
+  <div id="viz"></div>
 
   <script>
-    console.log("ForceGraph loaded:", typeof ForceGraph);
-    console.log("ForceGraph keys:", Object.keys(ForceGraph));
-
-    // Minimal test data
-    const data = {
-      nodes: [
-        { id: "A", name: "Node A" },
-        { id: "B", name: "Node B" }
-      ],
-      links: [
-        { source: "A", target: "B" }
-      ]
+    // Color palette from your ForceGraph version
+    const COLORS = {
+      Origin: "#ffcc00",
+      Domain: "#4f81bd",
+      Activity: "#9bbb59",
+      Education: "#c0504d",
+      Career: "#8064a2",
+      Milestone: "#f79646",
+      "Life Driver": "#f79646"
     };
 
-    const elem = document.getElementById("graph");
+    // Helper: fetch Cypher through your Netlify function
+    async function runCypher(cypher, params = {}) {
+      const res = await fetch("/.netlify/functions/query", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ cypher, params })
+      });
+      return res.json();
+    }
 
-    // UMD build requires node-object links, so convert:
-    const nodeMap = {};
-    data.nodes.forEach(n => nodeMap[n.id] = n);
-    data.links = data.links.map(l => ({
-      source: nodeMap[l.source],
-      target: nodeMap[l.target]
-    }));
+    // Convert Netlify/Neo4j function rows → Neovis.js format
+    function convert(rows) {
+      const nodes = {};
+      const edges = [];
 
-    const Graph = ForceGraph()(elem)
-      .nodeId("id")
-      .nodeLabel(n => n.name)
-      .nodeColor(() => "#4f81bd");
+      rows.forEach(row => {
+        const n = row.row[0];
+        const r = row.row[1];
+        const m = row.row[2];
 
-    Graph.graphData(data);
-    Graph.zoomToFit(400, 50);
+        const a = n.properties;
+        const b = m.properties;
+
+        nodes[a.id] = {
+          id: a.id,
+          label: a.name,
+          group: a.type,
+          color: COLORS[a.type] || "#999"
+        };
+
+        nodes[b.id] = {
+          id: b.id,
+          label: b.name,
+          group: b.type,
+          color: COLORS[b.type] || "#999"
+        };
+
+        edges.push({
+          from: a.id,
+          to: b.id,
+          label: r.type
+        });
+      });
+
+      return { nodes: Object.values(nodes), edges };
+    }
+
+    // Render Neovis.js graph
+    async function renderInitial() {
+      const rows = await runCypher(`
+        MATCH (o {id: 'O1'})-[r:EXPLORES|INFLUENCES]->(m)
+        RETURN o, r, m
+      `);
+
+      const { nodes, edges } = convert(rows);
+
+      const config = {
+        containerId: "viz",
+        visConfig: {
+          nodes: {
+            shape: "dot",
+            size: 20,
+            font: { color: "#eee" }
+          },
+          edges: {
+            arrows: "to",
+            color: "#888",
+            font: { color: "#ccc", size: 10 }
+          },
+          physics: {
+            stabilization: true
+          }
+        },
+        labels: {},
+        relationships: {},
+        initialCypher: "RETURN 1" // we override manually
+      };
+
+      const viz = new NeoVis.default(config);
+      viz.render();
+
+      // Inject our own data
+      viz.network.setData({ nodes, edges });
+
+      // Expand on click
+      viz.network.on("click", async params => {
+        if (!params.nodes.length) return;
+
+        const id = params.nodes[0];
+
+        const rows = await runCypher(`
+          MATCH (n {id: $id})-[r]->(m)
+          RETURN n, r, m
+        `, { id });
+
+        const { nodes: newNodes, edges: newEdges } = convert(rows);
+
+        viz.network.body.data.nodes.update(newNodes);
+        viz.network.body.data.edges.update(newEdges);
+      });
+    }
+
+    renderInitial();
   </script>
 </body>
 </html>
