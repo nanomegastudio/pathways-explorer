@@ -216,4 +216,12 @@ function updateSidebar(node) {
   const box = document.getElementById("node-details-content");
 
   box.innerHTML = `
-    <div class="detail-item"><strong>Name:</strong>
+    <div class="detail-item"><strong>Name:</strong> ${node.name}</div>
+    <div class="detail-item"><strong>ID:</strong> ${node.id}</div>
+    <div class="detail-item"><strong>Type:</strong> ${node.type}</div>
+    <div class="detail-item"><strong>Domain:</strong> ${node.domain}</div>
+    <div class="detail-item"><strong>Stage:</strong> ${node.stage}</div>
+    <hr/>
+    <div class="detail-description">${node.description || "No description available."}</div>
+  `;
+}
