@@ -75,9 +75,9 @@ window.addEventListener("load", () => {
     .linkLabel(link => link.relationship)
     .onNodeClick(handleNodeClick);
 
-  // Explicit size so layout is correct
-  Graph.width(window.innerWidth - 320);
-  Graph.height(window.innerHeight);
+  // Explicit size (critical)
+  Graph.width(graphElem.offsetWidth);
+  Graph.height(graphElem.offsetHeight);
 
   loadInitial();
 });
@@ -106,7 +106,7 @@ async function loadInitial() {
   // Bring everything into view
   Graph.zoomToFit(400, 50);
 
-  // Nudge ForceGraph to recompute layout
+  // Force layout update
   setTimeout(() => {
     debugLog("Dispatching resize event to ForceGraph");
     window.dispatchEvent(new Event("resize"));

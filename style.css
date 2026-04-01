@@ -11,6 +11,7 @@ html, body {
   display: flex;
   height: 100vh;
   width: 100vw;
+  overflow: hidden;
 }
 
 /* Sidebar */
@@ -26,16 +27,6 @@ html, body {
   gap: 12px;
 }
 
-#sidebar h1 {
-  margin: 0 0 8px 0;
-  font-size: 20px;
-}
-
-#sidebar h2 {
-  margin: 16px 0 8px 0;
-  font-size: 16px;
-}
-
 #node-details {
   flex: 1;
   border: 1px solid #ddd;
@@ -45,27 +36,21 @@ html, body {
   overflow-y: auto;
 }
 
-.detail-item {
-  margin-bottom: 4px;
-}
-
-.detail-description {
-  margin-top: 8px;
-}
-
-/* Graph area */
+/* Graph container MUST have height */
 #graph-container {
   flex: 1;
   position: relative;
-  background: #111;
+  height: 100vh; /* ← FIX: ensures canvas never collapses */
+  overflow: hidden;
 }
 
+/* Graph canvas MUST fill container */
 #graph {
   position: absolute;
   top: 0;
   left: 0;
-  width: calc(100vw - 320px);
-  height: 100vh;
+  width: 100%;
+  height: 100%; /* ← FIX: ensures ForceGraph always has real height */
   background: #111;
 }
 
