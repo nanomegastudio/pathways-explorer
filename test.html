@@ -2,30 +2,68 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>Neovis.js Explorer</title>
+  <title>Pathways Explorer</title>
 
-  <!-- Neovis.js CDN -->
-  <script src="https://unpkg.com/neovis.js@2.0.2/dist/neovis.js"></script>
+  <script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
 
   <style>
     html, body {
       margin: 0;
       height: 100%;
       overflow: hidden;
+      font-family: system-ui, sans-serif;
       background: #111;
     }
-    #viz {
-      width: 100%;
-      height: 100%;
+
+    #app {
+      display: flex;
+      height: 100vh;
+      width: 100vw;
+    }
+
+    /* Sidebar */
+    #sidebar {
+      width: 320px;
+      background: #f7f7f7;
+      color: #222;
+      padding: 16px;
+      box-sizing: border-box;
+      border-right: 1px solid #ddd;
+      display: flex;
+      flex-direction: column;
+    }
+
+    #node-details {
+      flex: 1;
+      background: #fff;
+      border: 1px solid #ddd;
+      padding: 12px;
+      overflow-y: auto;
+    }
+
+    #graph {
+      flex: 1;
+      background: #111;
+    }
+
+    .detail-item {
+      margin-bottom: 8px;
     }
   </style>
 </head>
 
 <body>
-  <div id="viz"></div>
+  <div id="app">
+    <div id="sidebar">
+      <h2>Node Details</h2>
+      <div id="node-details">Click a node to explore</div>
+    </div>
+
+    <div id="graph"></div>
+  </div>
 
   <script>
-    // Color palette from your ForceGraph version
+    // Your color palette
     const COLORS = {
       Origin: "#ffcc00",
       Domain: "#4f81bd",
@@ -36,7 +74,7 @@
       "Life Driver": "#f79646"
     };
 
-    // Helper: fetch Cypher through your Netlify function
+    // Run Cypher through your Netlify function
     async function runCypher(cypher, params = {}) {
       const res = await fetch("/.netlify/functions/query", {
         method: "POST",
@@ -46,31 +84,28 @@
       return res.json();
     }
 
-    // Convert Netlify/Neo4j function rows → Neovis.js format
+    // Convert Neo4j rows → Vis.js format
     function convert(rows) {
       const nodes = {};
       const edges = [];
 
       rows.forEach(row => {
-        const n = row.row[0];
+        const a = row.row[0].properties;
         const r = row.row[1];
-        const m = row.row[2];
-
-        const a = n.properties;
-        const b = m.properties;
+        const b = row.row[2].properties;
 
         nodes[a.id] = {
           id: a.id,
           label: a.name,
-          group: a.type,
-          color: COLORS[a.type] || "#999"
+          color: COLORS[a.type] || "#999",
+          raw: a
         };
 
         nodes[b.id] = {
           id: b.id,
           label: b.name,
-          group: b.type,
-          color: COLORS[b.type] || "#999"
+          color: COLORS[b.type] || "#999",
+          raw: b
         };
 
         edges.push({
@@ -80,51 +115,53 @@
         });
       });
 
-      return { nodes: Object.values(nodes), edges };
+      return {
+        nodes: Object.values(nodes),
+        edges
+      };
     }
 
-    // Render Neovis.js graph
+    // Update sidebar
+    function updateSidebar(node) {
+      const box = document.getElementById("node-details");
+      box.innerHTML = `
+        <div class="detail-item"><strong>Name:</strong> ${node.raw.name}</div>
+        <div class="detail-item"><strong>ID:</strong> ${node.raw.id}</div>
+        <div class="detail-item"><strong>Type:</strong> ${node.raw.type}</div>
+        <div class="detail-item"><strong>Domain:</strong> ${node.raw.domain || "—"}</div>
+        <div class="detail-item"><strong>Stage:</strong> ${node.raw.stage || "—"}</div>
+        <hr/>
+        <div>${node.raw.description || "No description available."}</div>
+      `;
+    }
+
     async function renderInitial() {
       const rows = await runCypher(`
-        MATCH (o {id: 'O1'})-[r:EXPLORES|INFLUENCES]->(m)
+        MATCH (o {id: 'O1'})-[r]->(m)
         RETURN o, r, m
       `);
 
       const { nodes, edges } = convert(rows);
 
-      const config = {
-        containerId: "viz",
-        visConfig: {
-          nodes: {
-            shape: "dot",
-            size: 20,
-            font: { color: "#eee" }
-          },
-          edges: {
-            arrows: "to",
-            color: "#888",
-            font: { color: "#ccc", size: 10 }
-          },
-          physics: {
-            stabilization: true
-          }
-        },
-        labels: {},
-        relationships: {},
-        initialCypher: "RETURN 1" // we override manually
+      const container = document.getElementById("graph");
+      const data = {
+        nodes: new vis.DataSet(nodes),
+        edges: new vis.DataSet(edges)
       };
 
-      const viz = new NeoVis.default(config);
-      viz.render();
+      const network = new vis.Network(container, data, {
+        nodes: { shape: "dot", size: 20, font: { color: "#eee" } },
+        edges: { arrows: "to", color: "#888", font: { color: "#ccc", size: 10 } },
+        physics: { stabilization: true }
+      });
 
-      // Inject our own data
-      viz.network.setData({ nodes, edges });
-
-      // Expand on click
-      viz.network.on("click", async params => {
+      // Click to expand
+      network.on("click", async params => {
         if (!params.nodes.length) return;
 
         const id = params.nodes[0];
+        const node = data.nodes.get(id);
+        updateSidebar(node);
 
         const rows = await runCypher(`
           MATCH (n {id: $id})-[r]->(m)
@@ -133,8 +170,8 @@
 
         const { nodes: newNodes, edges: newEdges } = convert(rows);
 
-        viz.network.body.data.nodes.update(newNodes);
-        viz.network.body.data.edges.update(newEdges);
+        data.nodes.update(newNodes);
+        data.edges.update(newEdges);
       });
     }
 
