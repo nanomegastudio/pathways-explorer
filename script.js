@@ -1,7 +1,6 @@
 // -------------------------------
 // CONFIGURATION
 // -------------------------------
-
 const COLORS = {
   Origin: "#ffcc00",
   Domain: "#4f81bd",
@@ -11,6 +10,9 @@ const COLORS = {
   Milestone: "#f79646",
   "Life Driver": "#f79646"
 };
+
+let Graph;
+let graphData = { nodes: [], links: [] };
 
 // -------------------------------
 // DEBUG PANEL
@@ -55,15 +57,14 @@ async function runCypher(cypher, params = {}) {
 }
 
 // -------------------------------
-// FORCEGRAPH INITIALIZATION (Fix 3)
+// FORCEGRAPH INITIALIZATION
 // -------------------------------
-let Graph;
-let graphData = { nodes: [], links: [] };
-
 window.addEventListener("load", () => {
   debugLog("WINDOW LOADED — initializing graph");
 
   const graphElem = document.getElementById("graph");
+
+  debugLog("ForceGraph loaded?", typeof ForceGraph);
 
   Graph = ForceGraph()(graphElem)
     .nodeId("id")
@@ -73,6 +74,10 @@ window.addEventListener("load", () => {
     .linkDirectionalArrowRelPos(1)
     .linkLabel(link => link.relationship)
     .onNodeClick(handleNodeClick);
+
+  // Explicit size so layout is correct
+  Graph.width(window.innerWidth - 320);
+  Graph.height(window.innerHeight);
 
   loadInitial();
 });
@@ -98,9 +103,10 @@ async function loadInitial() {
 
   Graph.graphData(graphData);
 
-  // -------------------------------
-  // FIX 6 — Force a resize after rendering
-  // -------------------------------
+  // Bring everything into view
+  Graph.zoomToFit(400, 50);
+
+  // Nudge ForceGraph to recompute layout
   setTimeout(() => {
     debugLog("Dispatching resize event to ForceGraph");
     window.dispatchEvent(new Event("resize"));
@@ -130,8 +136,8 @@ async function handleNodeClick(node) {
 
   mergeGraphData(newData);
   Graph.graphData(graphData);
+  Graph.zoomToFit(400, 50);
 
-  // Fix 6 again for expanded graph
   setTimeout(() => {
     window.dispatchEvent(new Event("resize"));
   }, 300);

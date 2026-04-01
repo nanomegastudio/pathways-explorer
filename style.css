@@ -2,7 +2,9 @@ html, body {
   margin: 0;
   padding: 0;
   height: 100%;
-  font-family: system-ui, sans-serif;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background: #111;
+  color: #eee;
 }
 
 #app {
@@ -11,38 +13,63 @@ html, body {
   width: 100vw;
 }
 
+/* Sidebar */
 #sidebar {
   width: 320px;
   padding: 16px;
-  background: #fafafa;
-  border-right: 1px solid #ddd;
   box-sizing: border-box;
+  background: #f7f7f7;
+  color: #222;
+  border-right: 1px solid #ddd;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
 #sidebar h1 {
-  margin-top: 0;
+  margin: 0 0 8px 0;
+  font-size: 20px;
 }
 
-#node-info {
-  margin-top: 20px;
-  border-top: 1px solid #ddd;
-  padding-top: 10px;
+#sidebar h2 {
+  margin: 16px 0 8px 0;
+  font-size: 16px;
 }
 
-#node-details-content {
-  font-size: 0.9rem;
-  white-space: pre-wrap;
+#node-details {
+  flex: 1;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  padding: 8px;
+  background: #fff;
+  overflow-y: auto;
+}
+
+.detail-item {
+  margin-bottom: 4px;
+}
+
+.detail-description {
+  margin-top: 8px;
+}
+
+/* Graph area */
+#graph-container {
+  flex: 1;
+  position: relative;
+  background: #111;
 }
 
 #graph {
-  flex: 1;
-  width: 100%;
-  height: 100%;
-  display: block;
-  background: #222;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: calc(100vw - 320px);
+  height: 100vh;
+  background: #111;
 }
 
-
+/* Debug overlay */
 #debug {
   position: fixed;
   bottom: 0;
@@ -50,12 +77,12 @@ html, body {
   width: 100%;
   max-height: 200px;
   overflow-y: auto;
-  background: rgba(0,0,0,0.85);
+  background: rgba(0, 0, 0, 0.85);
   color: #0f0;
   font-family: monospace;
-  font-size: 12px;
-  padding: 8px;
+  font-size: 11px;
+  padding: 6px;
   white-space: pre-wrap;
   z-index: 9999;
+  box-sizing: border-box;
 }
-

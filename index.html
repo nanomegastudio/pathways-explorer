@@ -9,22 +9,32 @@
   <div id="app">
     <div id="sidebar">
       <h1>Pathways Explorer</h1>
-      <p>Start from the Discovery Phase and explore how domains, activities, education, and careers connect.</p>
+      <p>
+        Start from the Discovery Phase and explore how domains, activities,
+        education, and careers connect.
+      </p>
 
-      <div id="node-info">
-        <h2>Node Details</h2>
+      <h2>Node Details</h2>
+      <div id="node-details">
         <div id="node-details-content">
-          Click a node to see more information here.
+          <p>Click a node to see more information here.</p>
         </div>
       </div>
     </div>
 
-    <canvas id="graph"></canvas>
+    <div id="graph-container">
+      <div id="graph"></div>
+    </div>
   </div>
 
-  <script src="lib/force-graph.min.js"></script>
-  <script src="script.js"></script>
-<div id="debug"></div>
+  <!-- Debug overlay -->
+  <div id="debug"></div>
 
+  <!-- ForceGraph (self-hosted or CDN) -->
+  <!-- If self-hosted, ensure lib/force-graph.min.js exists -->
+  <script src="lib/force-graph.min.js"></script>
+
+  <!-- Main script -->
+  <script src="script.js"></script>
 </body>
 </html>
