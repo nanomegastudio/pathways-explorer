@@ -256,7 +256,7 @@ async function renderInitial() {
       id: n.id,
       shape: ICONS_ENABLED ? "image" : "dot",
 
-      // ⭐ SAFE ICON HANDLING HERE TOO
+      // SAFE ICON HANDLING HERE TOO
       image: ICONS_ENABLED ? (ICONS[n.raw.type] || ICONS["Default"]) : null
     }));
 
