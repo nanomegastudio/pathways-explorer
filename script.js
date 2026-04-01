@@ -38,7 +38,7 @@ async function runCypher(cypher, params = {}) {
       body: JSON.stringify({ cypher, params })
     });
   } catch (err) {
-    debugLog("NETWORK ERROR calling Netlify function:", err);
+    debugLog("NETWORK ERROR:", err);
     return null;
   }
 
@@ -64,6 +64,7 @@ window.addEventListener("load", () => {
 
   const graphElem = document.getElementById("graph");
 
+  debugLog("GRAPH ELEMENT SIZE AT INIT:", graphElem.offsetWidth, graphElem.offsetHeight);
   debugLog("ForceGraph loaded?", typeof ForceGraph);
 
   Graph = ForceGraph()(graphElem)
@@ -75,7 +76,6 @@ window.addEventListener("load", () => {
     .linkLabel(link => link.relationship)
     .onNodeClick(handleNodeClick);
 
-  // Explicit size (critical)
   Graph.width(graphElem.offsetWidth);
   Graph.height(graphElem.offsetHeight);
 
@@ -101,15 +101,16 @@ async function loadInitial() {
   graphData = convertToGraph(rows);
   debugLog("INITIAL GRAPH DATA:", graphData);
 
-  Graph.graphData(graphData);
+  const graphElem = document.getElementById("graph");
+  debugLog("GRAPH ELEMENT SIZE BEFORE RENDER:", graphElem.offsetWidth, graphElem.offsetHeight);
 
-  // Bring everything into view
+  Graph.graphData(graphData);
   Graph.zoomToFit(400, 50);
 
-  // Force layout update
   setTimeout(() => {
-    debugLog("Dispatching resize event to ForceGraph");
+    debugLog("GRAPH ELEMENT SIZE BEFORE RESIZE:", graphElem.offsetWidth, graphElem.offsetHeight);
     window.dispatchEvent(new Event("resize"));
+    debugLog("GRAPH ELEMENT SIZE AFTER RESIZE:", graphElem.offsetWidth, graphElem.offsetHeight);
   }, 500);
 }
 
@@ -137,10 +138,6 @@ async function handleNodeClick(node) {
   mergeGraphData(newData);
   Graph.graphData(graphData);
   Graph.zoomToFit(400, 50);
-
-  setTimeout(() => {
-    window.dispatchEvent(new Event("resize"));
-  }, 300);
 }
 
 // -------------------------------
@@ -219,12 +216,4 @@ function updateSidebar(node) {
   const box = document.getElementById("node-details-content");
 
   box.innerHTML = `
-    <div class="detail-item"><strong>Name:</strong> ${node.name}</div>
-    <div class="detail-item"><strong>ID:</strong> ${node.id}</div>
-    <div class="detail-item"><strong>Type:</strong> ${node.type}</div>
-    <div class="detail-item"><strong>Domain:</strong> ${node.domain}</div>
-    <div class="detail-item"><strong>Stage:</strong> ${node.stage}</div>
-    <hr/>
-    <div class="detail-description">${node.description || "No description available."}</div>
-  `;
-}
+    <div class="detail-item"><strong>Name:</strong>
